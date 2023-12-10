@@ -1,0 +1,359 @@
+Docker
+------
+1.Docker is a containerization platform that helps to create the containers.
+2. Components of Docker
+	a.Docker Client (CLI)
+	b.Docker_Host (Docker Daemon)
+	c.Docker Registry
+3.Docker Container has system dependencies , Application Libraries and Application itself.
+
+docker installation
+-------------------
+ssh -i <publickey location from filesystem> <host>
+sudo apt update
+sudo apt install docker.io -y
+sudo systemctl status docker 	-> to check docker daemon status
+sudo usermod -aG docker ubuntu(user)
+
+	
+3.Life Cycle of Docker
+----------------------
+			build				run
+DockerFile -----> Docker Image  ----> Docker Container
+(Docker CLI/Client)----->Docker Daemon --> Docker Registry
+
+Docker Commands df for disk usage in Linux
+---------------
+docker version
+docker build -t <username>/<repository>:<tag> .
+docker build -t harshakiran/my-first-docker-image:v1 .
+docker run -it harshakiran/my-first-docker-image:v1
+docker stop <containername>
+docker rm <containername> (to remove container)
+docker rmi <imagename> (to remove stopped images)
+docker login(Login to docker registry)
+docker push harshakiran/my-first-docker-image:v1
+docker pull harshakiran/my-first-docker-image:v1 (to pull the image)
+docker run -p 8000:8000 -it harshakiran/my-first-docker-image:v1 (mapping port on the container to host)
+docker run -d --name login nginx:latest (to run the container in detach mode/or in back ground)
+docker run -it ^C
+docker images | head -5
+docker inspect <Containername> (to get the ip details of container)
+docker network ls (to display all the networks)
+docker network rm <networkname>
+docker network create secure-network (create custom network)
+docker run -d --name <containernamealiasname> --network<customnetworkname>  containername:tag (attach container to custom network)
+docker run -d --name <conatineraliasname> --network=host containername:tag (attach network to host network)
+	eg:docker run -d --name host-demo --network=host nginx:latest
+docker volume ls (to display volumes)
+docker volume create <volumename>
+docker volume inspect <volumename> (to get the details of the volume)
+docker volume rm <volumename> (to delete the volume)
+docker volume rm <volumename1> <volumename2>(to delete the multiple volumes)
+docker run -d --mount source <volumename>,target=/app <image> (to mount volume created and attach to the host folder i.e target)
+
+docker pull grafana/grafana:9.2.2
+docker pull prom/prometheus:v2.39.2
+docker run -d -p 3000:3000 -it grafana/grafana:9.2.2
+docker run -d -p 9090:9090 -it prom/prometheus:v2.39.2
+
+
+
+
+DockerFile
+----------
+FROM openjdk:11-jdk-slim
+WORKDIR /app
+COPY  /build/libs/*.jar app.jar
+ADD link for jar file to download
+ENV JAVA_TOOL_OPTIONS "-javaagent:./downloaded.jar"
+CMD["java","-jar","main.jar"]
+
+Multistage Docker & Distroless Images
+-------------------------------------
+docker images | head -5
+
+https://github.com/iam-veeramalla/Docker-Zero-to-Hero/blob/main/examples/golang-multi-stage-docker-build/Dockerfile
+https://github.com/GoogleContainerTools/distroless/tree/main/java
+
+Container Networking
+--------------------
+1.Bridge Networking(Docker 0)
+2.Host Networking
+3.OverLay Networking(Kubernetes, Docker Swarm)
+4.Custom Bridge Network for container isolation.
+Case 1: Container Communication with the Host Networking
+--------------------------------------------------------
+	-When a container is created inside a vm with subnet address it is assigned a subnet address which is different from vm subnet address.
+	- A bridge Network/Docker 0 Network/Virtual ethernet is created for communication between container and vm.
+
+Docker Bind Mounts And Volumes
+------------------------------
+1.Containers are ephimerals in Nature (i.e) if the container goes down it Free's up all the resources that it uses from the host  Operating System.
+2.Containers are short lived it does not have File System it uses the CPU Memory Storage File System directly from the host Operating System that's why Containers are light weight in nature.
+3.Bind Mounts allow us to bind a specific folders on container to the specific folder on host Operating System so that if a container is destroyed it has the info on the host.
+4.Volumes gives us a flexibility to manage Lifecycle of the Container Mounts(i.e u can create/destroy or attach the mounts to another container)
+
+Prometheus
+-----------
+1.Prometheus has a core component called Prometheus Server that does the Actual Monitoring Work.
+2.Prometheus has 3 main components
+	- Time Series Database - Time Series DataBase Stores the Metrics Data such as CPU Usage, No of Exceptions occured.
+	- Data Retrieval Worker - Data Retrieval Worker is responsible for pulling the metrics from the Apllications/Services/Servers and storing in to the Time Series DataBase.
+	- Http Server Api is responsible for Quering(PromoQL Queries) the Time Series database and display the data in the DashBoard either in the Prometheus UI or in Data Visualisation Tool Grafana.
+	
+Kubernetes
+----------
+Kubernetes is a container orchestration platform.
+Problems in Docker
+------------------
+	-Single host Nature
+	-AutoHealing cannot be done
+	-Auto Scaling cannot be done.
+	-Docker does not provide Enterprise level Support and Standards.
+HPA(Horizontal Pod Auto Scaler) is used for Auto-Scaling.
+In Kubernetes Api Server fixes the Auto Healing issue by Rolling a new POD even before the POD with issue goes down.
+
+Kubernetes offers
+	-Cluster in Behaviour.
+	-Auto-Scaling.
+	-AutoHealing.
+	-provides Multiple Enterprise level support.
+
+Kubernetes Architecture
+-----------------------
+Kubernetes is divided into two parts
+1.Control Plane(Master Node)-Control Plane is Controlling/Managing the Actions in Kubernetes
+2.Data Plane (Worker Node)- Data Plane is executing the Actions.
+
+	Control Plane(Master Node)
+	--------------------------
+		-Api Server: Every Request from the external world is received by Api Server.It is the heart of the Kubernetes.
+		-kube-scheduler: Scheduler schedules/assigns the resources/POD's where api server decides to which worker Node the request has to sent.
+		-etcd: etcd is a Data Store/Key value Store which stores all the information as Keyvalue pairs or Objects of the cluster. It can be used as a backup Store of the Cluster.
+		-Controllermanager(CM): ControllerManager is the Manager for the Kubernetes in built Controllers.For supporting autoscaling Kubernetes has to detect and spin up POD's it is supported by controllers such as ReplicaSets
+				-ReplicaSets: ReplicaSets is the maintaining state of K8's POD'si.e it ensures that the no of pod's mentioned in the yaml are running.
+		-Cloud control manager(CCM):CCM is a open Source Utility which ensures that the Kubernetes is supported by Cloud.
+	
+	Data Plane (Worker Node)
+	------------------------
+		-Kubelet: Kubelet is responsible for creation/running/maintaing the POD.if the POD is not running the Kubelet informs the Api Server
+		-Kube Proxy: Kube proxy is used for Networking on Kubernetes Cluster.It allocates IpAddress by using the IpTables Concept on Linux to the POD's and provides Load balancing mechanism such that requests are distributed across the replicas of POD's.
+		-Container RunTime: We can use DockerShim(i.e Docker Runtime), containerd,crio or any other Runtimes which implements Kubernetes interface as Runtime to run the pods.
+
+Production Ready Kubernetes Distributions
+-----------------------------------------
+1.EKS(Amazon)
+2.OpenShift(redhat)
+3.Tanzu(VMWare)
+4.Rancher(RancherLabs)
+5.AKS(Azure)
+6.GKS(Goggle)
+7.DKE(Docker)
+
+Kubernetes installation
+-----------------------
+1.Kubernetes test clusters for development we can use minikube, k3s, k3d, kind ,microk8s.
+2.Install MiniKube
+3.Install Kubectl
+4.Install Hypervisor on Platform.
+
+MiniKube
+---------
+minikube start ->(To Start the Minkube Cluster)
+Interact with your cluster
+-------------------------
+kubectl get po -A
+minikube kubectl -- get po -A (To get kubectl for the compatible version for minikube)
+
+Deploy an App in Kubernetes
+---------------------------
+1.POD is a definition of how to run a container.
+2.POD is a wrapper for all the containers running inside a POD.
+3.we create pod.yml for POD's it has all the details of the container that are running inside a POD.
+4.We access the container using cluster ip address that kuberenetes has given to the POD.KubeProxy generates the cluster ip address.
+
+
+minikube commands
+-----------------
+1.When minikube is started it creates a virtual machine(VM) and on top of VM it creates a single node kubernetes cluster.
+
+commands
+---------
+	minikube start ->(it starts the k8 cluster using docker driver)
+	minikube start --memory=4096 --driver=hyperkit (to use hyperkit as driver) ->hyperkit is not supported in windows.
+	minikube status
+	kubectl cluster-info
+	kubectl get nodes
+	kubectl run hello-minikube
+	kubectl get nodes (to get all the running nodes)
+	kubectl create -f pod.yml (to create a pod)
+	kubectl get pods
+	kubectl get pods -o wide
+	minkube ssh (to login to the cluster)
+	minikube ssh <masternode ipaddress> (to login to remote cluster)
+	kubectl delete pod nginx (to delete a pod)
+	kubectl apply -f pod.yml
+	kubectl logs <podname> nginx
+	kubectl describe pod nginx
+	kubectl get all (to get all the reources)
+	kubectl get all -A (to get all the reources from all the namespaces)
+	kubectl get pods -w (to know the behaviour of the POD)
+	kubectl apply -f deployment.yml
+	kubectl get deploy
+	kubectl delete deploy <deployment-name>
+	kubectl delete pod <pod-name>
+	kubectl delete svc <service-name>
+	kubectl get pods -v=7 (to get the last 7 log statements)
+	kubectl get pods -A (to get all the running pods including k8s native pods)
+	
+	logging into Pod
+	----------------
+	kubectl exec -it <POdNAME> -- /bin/bash
+	env | grep DB (to see the value inside a pod)
+	
+	kubectl apply -f ingress.yml
+	kubectl get ingress
+	
+	getting local docker images into minikube registry
+	--------------------------------------------------
+	minikube image load adigamharsha/wallet-springboot-test:v1
+	minikube image ls --format table
+	
+	Enable docker registry to push images to minikube registry
+	----------------------------------------------------------
+	minikube addons enable registry
+	kubectl get service --namespace kube-system
+	kubectl port-forward --namespace kube-system service/registry 55026:80
+	docker run --rm -it --network=host alpine ash -c "apk add socat && socat TCP-LISTEN:55026,reuseaddr,fork TCP:host.docker.internal:55026"
+	docker tag wallet-test/wallet-springboot-test:v1 localhost:55026/wallet-test/wallet-springboot-test:v1
+	docker push localhost:55026/wallet-test/wallet-springboot-test:v1
+
+	
+
+	ssh -i <identityfilename> <ipaddress> (to login to remote kubernetes cluster) 
+Deployment Resource
+-------------------
+Creation of POD using Deployment Resource
+------------------------------------------------
+1.Create a Deployment Resource which inturn creates Replica Set(known as a Kubernetes controller) which creates a POD.
+2.We will create a deployment yaml manifest it roll out a Replica set which ensures that the mentioned POD's are running there by providing auto healing mechanism.
+
+		Deployment -> Replica Set -> POD
+Service in Kubernetes(svc)
+---------------------------
+1.Kubernetes Service is an abstarct way or a proxy to identify a POD.
+2.When one POD tries to communicate with another POD it communicates via service using labels and selectors.
+3.Service offers 
+				a.Load balancing by using KubeProxy
+				b.Service Discovery by using Labels and Selectors.
+				c.Service can expose the Application outside the kubernetes cluster.
+4.Service can be of below Types
+		--ClusterIp -this is a default Type with this Type application can be accessed inside the Kubernetes cluster.We get Service Discovery and Load Balancing with this Service Type.
+		--NodePort - This Type can be accesed who ever has access to the Worker Nodes.
+		--LoadBalancer - This Type exposes ur service to the external world.CCM of control plane creates external ip address and it can be accessible to external world.
+		
+Ingress
+-------
+some of the Load Balancers are Nginx, F5 , Ambassdor , Traffic and HAProxy.
+	problems with load balancer type services
+	-----------------------------------------
+	1.With services Load Balancer we get basic Load Balancer which assigns request using round robin algorithm and all the enterprise features that were available in Load Balacer are missing.
+	2. In Enterprise if we have 1000 services we are creating 1000 services with Load Balancer where we create 1000 static ip address due to which the cloud providers were charging a huge.
+1.Using Ingress Resource we can defines routing for specific services and we can expose service to the outside world.
+
+Secure Ingress using TLS
+------------------------
+Different ways of applying the TLS for Ingress is
+1.SSL Passthrough
+-----------------
+	-> SSL Passthrough passes encrypted HTTPS traffic directly to the Backend Servers without decrypting the traffics at Load balancer.
+	-> SSL Passthrough is also a costly process might require more CPU.
+	-> Hacker can directly access the backend server because there is no decryption occuring at Load Balancer it just passthrought the packets.
+2.SSL OffLoading
+-----------------
+	-> SSL OffLoading decrypts request at the Load Balancer and sends the the plain request to the Backend Server.
+3.SSL Bridging
+--------------
+	-> SSL Bridging decrypts all the HTTPS traffic at the Load Balancer and the data is sent to the destination Server as https traffic by re-encypting it.
+	
+Kubernetes RBAC(Role Based Access Control)
+------------------------------------------
+
+Custom Resource Definition (CRD)
+--------------------------------
+1.To extend the capabilities of api in Kubernetes we have
+				-> Custom Resource Definition (CRD)-- CRD is created and deployed to extend the capabilities of Kuberntes Cluster.
+				-> Custom Resource (CR) -- CR is validated against the deployed CRD if validation is successful the CustomController is assigned.
+				-> Custom Controller
+				
+Config Maps and Secrets in Kubernetes
+-------------------------------------
+
+Kubernetes Monitoring
+---------------------
+
+Install Prometheus
+-----------------
+	Install using Helm
+	------------------
+	Add helm repo
+	-------------
+	helm repo add prometheus-community https://prometheus-community.github.io/helm-chart
+	Update helm repo
+	----------------
+	helm repo update
+	Install helm
+	------------
+	helm install prometheus prometheus-community/prometheus
+	Expose Prometheus Service.This is required to access prometheus-server using your browser.
+	-----------------------------------------------------------------------------------------
+	kubectl expose service prometheus-server --type=NodePort --target-port=9090 --name=prometheus-server-ext
+Install grafana
+--------------
+	Install using Helm
+	------------------
+	Add helm repo
+	-------------
+	helm repo add grafana https://grafana.github.io/helm-charts
+	Update helm repo
+	----------------
+	helm repo update
+	Install helm
+	------------
+	helm install grafana grafana/grafana
+	Expose Grafana Service
+	----------------------	
+	kubectl expose service grafana --type=NodePort --target-port=3000 —-name=grafana-ext
+
+
+
+CKAD Exam Code (20KLOUD)
+
+Helm
+-----
+Helm has 
+1.Charts -- A chart is a Helm package
+2.Repositories -- A Repository is a place where we can find charts.
+3.Release-- Release is a running instance of a chart in Kubernetes Cluster.
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
